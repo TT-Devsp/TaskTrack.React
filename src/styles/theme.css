@@ -179,3 +179,21 @@
     line-height: 1.5;
   }
 }
+
+@layer base {
+  [data-slot='dialog-overlay'],
+  [data-slot='alert-dialog-overlay'] {
+    background-color: rgba(15, 23, 42, 0.18) !important;
+  }
+
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='select-content'],
+  [data-slot='dropdown-menu-content'],
+  [data-slot='dropdown-menu-sub-content'] {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+  }
+}
