@@ -39,7 +39,7 @@ export default function Login() {
         toast.success('Cadastro realizado com sucesso!');
         navigate('/');
       } else {
-        setError('Este email já está cadastrado');
+        setError('Nao foi possivel concluir o cadastro');
       }
     }
   };

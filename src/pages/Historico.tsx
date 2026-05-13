@@ -1,75 +1,66 @@
-import { useState } from 'react';
-import { useMaintenance } from '../contexts/MaintenanceContext';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { 
   History as HistoryIcon, 
   Search,
-  Filter,
   CheckCircle2,
   Calendar,
   MapPin,
-  User,
   FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
+import type { SolicitacaoResponse } from '../models/solicitacoes';
+import { getSolicitacoesConcluidas } from '../services/solicitacoes.service';
 
 export default function Historico() {
-  const { history } = useMaintenance();
+  const [items, setItems] = useState<SolicitacaoResponse[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-700 border-red-300';
-      case 'high': return 'bg-orange-100 text-orange-700 border-orange-300';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      default: return 'bg-blue-100 text-blue-700 border-blue-300';
+  const loadData = async () => {
+    try {
+      const data = await getSolicitacoesConcluidas();
+      setItems(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha ao carregar historico.';
+      toast.error(message);
     }
   };
 
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'Urgente';
-      case 'high': return 'Alta';
-      case 'medium': return 'Média';
-      default: return 'Baixa';
-    }
-  };
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   // Filtrar histórico
-  const filteredHistory = history.filter(item => {
+  const filteredHistory = items.filter(item => {
     const matchesSearch = 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.executedBy.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesPriority = filterPriority === 'all' || item.priority === filterPriority;
+      item.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.descricao || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.localizacao.toLowerCase().includes(searchTerm.toLowerCase());
 
     let matchesMonth = true;
     if (filterMonth !== 'all') {
-      const itemDate = new Date(item.executedAt);
+      const itemDate = new Date(item.dataCriacao);
       const itemMonth = format(itemDate, 'yyyy-MM');
       matchesMonth = itemMonth === filterMonth;
     }
 
-    return matchesSearch && matchesPriority && matchesMonth;
+    return matchesSearch && matchesMonth;
   });
 
   // Agrupar por data
   const groupedHistory = filteredHistory.reduce((groups, item) => {
-    const date = format(new Date(item.executedAt), 'yyyy-MM-dd');
+    const date = format(new Date(item.dataCriacao), 'yyyy-MM-dd');
     if (!groups[date]) {
       groups[date] = [];
     }
     groups[date].push(item);
     return groups;
-  }, {} as Record<string, typeof history>);
+  }, {} as Record<string, typeof items>);
 
   const sortedDates = Object.keys(groupedHistory).sort((a, b) => 
     new Date(b).getTime() - new Date(a).getTime()
@@ -77,7 +68,7 @@ export default function Historico() {
 
   // Obter meses únicos para o filtro
   const uniqueMonths = Array.from(new Set(
-    history.map(item => format(new Date(item.executedAt), 'yyyy-MM'))
+    items.map(item => format(new Date(item.dataCriacao), 'yyyy-MM'))
   )).sort((a, b) => b.localeCompare(a));
 
   return (
@@ -90,35 +81,17 @@ export default function Historico() {
       {/* Filtros */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por título, local, responsável..."
+                  placeholder="Buscar por título, local..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Filter className="size-4" />
-                    <SelectValue placeholder="Filtrar por prioridade" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as prioridades</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -144,7 +117,7 @@ export default function Historico() {
       </Card>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -161,30 +134,14 @@ export default function Historico() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Urgentes</p>
-                <p className="text-2xl mt-1 text-red-600">
-                  {filteredHistory.filter(h => h.priority === 'urgent').length}
+                <p className="text-sm text-gray-600">Últimos 7 dias</p>
+                <p className="text-2xl mt-1 text-blue-600">
+                  {filteredHistory.filter((h) =>
+                    new Date(h.dataCriacao).getTime() >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime()
+                  ).length}
                 </p>
               </div>
-              <div className="size-8 rounded-full bg-red-100 flex items-center justify-center">
-                <span className="text-red-600 text-sm">!</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Alta Prioridade</p>
-                <p className="text-2xl mt-1 text-orange-600">
-                  {filteredHistory.filter(h => h.priority === 'high').length}
-                </p>
-              </div>
-              <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center">
-                <span className="text-orange-600 text-sm">!</span>
-              </div>
+              <Calendar className="size-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
@@ -195,8 +152,8 @@ export default function Historico() {
               <div>
                 <p className="text-sm text-gray-600">Este Mês</p>
                 <p className="text-2xl mt-1 text-blue-600">
-                  {history.filter(h => 
-                    format(new Date(h.executedAt), 'yyyy-MM') === format(new Date(), 'yyyy-MM')
+                  {items.filter(h =>
+                    format(new Date(h.dataCriacao), 'yyyy-MM') === format(new Date(), 'yyyy-MM')
                   ).length}
                 </p>
               </div>
@@ -237,51 +194,35 @@ export default function Historico() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2 mb-1">
                             <CheckCircle2 className="size-5 text-green-600 shrink-0 mt-0.5" />
-                            <h4 className="font-medium">{item.title}</h4>
+                            <h4 className="font-medium">{item.titulo}</h4>
                           </div>
-                          <p className="text-sm text-gray-600 ml-7">{item.description}</p>
+                          <p className="text-sm text-gray-600 ml-7">{item.descricao || 'Sem descricao'}</p>
                         </div>
-                        <Badge variant="outline" className={getPriorityColor(item.priority)}>
-                          {getPriorityLabel(item.priority)}
-                        </Badge>
+                        <span className="text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">
+                          Concluida
+                        </span>
                       </div>
 
                       <div className="ml-7 space-y-2">
                         <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
                           <div className="flex items-center gap-1.5">
                             <MapPin className="size-4" />
-                            <span>{item.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <User className="size-4" />
-                            <span>{item.executedBy}</span>
+                            <span>{item.localizacao}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Calendar className="size-4" />
-                            <span>{format(new Date(item.executedAt), "HH:mm", { locale: ptBR })}</span>
+                            <span>{format(new Date(item.dataCriacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
                           </div>
                         </div>
-
-                        {item.notes && (
+                        {item.descricao && (
                           <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <div className="flex items-start gap-2">
                               <FileText className="size-4 text-gray-500 shrink-0 mt-0.5" />
                               <div>
-                                <p className="text-xs text-gray-500 mb-1">Observações</p>
-                                <p className="text-sm text-gray-700">{item.notes}</p>
+                                <p className="text-xs text-gray-500 mb-1">Observacoes</p>
+                                <p className="text-sm text-gray-700">{item.descricao}</p>
                               </div>
                             </div>
-                          </div>
-                        )}
-
-                        {item.taskId && (
-                          <div className="text-xs text-gray-500">
-                            Tarefa #{item.taskId}
-                          </div>
-                        )}
-                        {item.recurrenceId && (
-                          <div className="text-xs text-gray-500">
-                            Recorrência #{item.recurrenceId}
                           </div>
                         )}
                       </div>
