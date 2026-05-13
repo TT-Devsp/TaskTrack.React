@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
-import { 
+import {
   Building2, 
   LayoutDashboard, 
   ClipboardList, 
@@ -9,7 +9,11 @@ import {
   History, 
   LogOut,
   Menu,
-  X
+  X,
+  Users,
+  CheckSquare,
+  CalendarCheck,
+  PlayCircle
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,8 +31,12 @@ export default function Layout() {
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/tarefas', icon: ClipboardList, label: 'Tarefas' },
+    { path: '/aprovacoes', icon: CheckSquare, label: 'Aprovações' },
+    { path: '/planejamentos', icon: CalendarCheck, label: 'Planejamentos' },
+    { path: '/execucoes', icon: PlayCircle, label: 'Execuções' },
     { path: '/recorrencias', icon: Repeat, label: 'Recorrências' },
     { path: '/historico', icon: History, label: 'Histórico' },
+    { path: '/admin/usuarios', icon: Users, label: 'Usuários' },
   ];
 
   return (
@@ -95,6 +103,7 @@ export default function Layout() {
             <p className="text-sm text-gray-500">Usuário</p>
             <p className="font-medium truncate">{user?.name}</p>
             <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+            <p className="text-xs text-gray-400 truncate">{user?.role}</p>
           </div>
           <Button
             variant="outline"

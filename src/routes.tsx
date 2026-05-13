@@ -5,13 +5,24 @@ import Dashboard from './pages/Dashboard';
 import Tarefas from './pages/Tarefas';
 import Recorrencias from './pages/Recorrencias';
 import Historico from './pages/Historico';
+import AdminUsuarios from './pages/AdminUsuarios';
+import Aprovacoes from './pages/Aprovacoes';
+import Planejamentos from './pages/Planejamentos';
+import Execucoes from './pages/Execucoes';
+import { useAuth } from './contexts/AuthContext';
 
-// Helper component para rotas protegidas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const user = localStorage.getItem('user');
-  if (!user) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Aguarda verificação do localStorage
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+  
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return <>{children}</>;
 };
 
@@ -34,15 +45,59 @@ export const router = createBrowserRouter([
       },
       {
         path: 'tarefas',
-        element: <Tarefas />,
+        element: (
+          <ProtectedRoute>
+            <Tarefas />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'recorrencias',
-        element: <Recorrencias />,
+        element: (
+          <ProtectedRoute>
+            <Recorrencias />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'historico',
-        element: <Historico />,
+        element: (
+          <ProtectedRoute>
+            <Historico />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/usuarios',
+        element: (
+          <ProtectedRoute>
+            <AdminUsuarios />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'aprovacoes',
+        element: (
+          <ProtectedRoute>
+            <Aprovacoes />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'planejamentos',
+        element: (
+          <ProtectedRoute>
+            <Planejamentos />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'execucoes',
+        element: (
+          <ProtectedRoute>
+            <Execucoes />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
